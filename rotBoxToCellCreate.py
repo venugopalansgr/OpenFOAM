@@ -185,12 +185,6 @@ while currline!='':
 		oFW.write("\t\t}\n")
 		oFW.write("\t}\n")
 	
-		if "NS" in name:
-			angle = "(" + str(math.cos(math.radians(22))) + " " + str(-math.sin(math.radians(22))) + " 0)"
-		elif "EW" in name:
-			angle = "(" + str(math.cos(math.radians(68))) + " " + str(math.sin(math.radians(68))) + " 0)"
-	
-			
 		ii = ii+1
 
 		print "Done ",name
