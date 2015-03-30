@@ -13,6 +13,8 @@
 # Output: OpenFOAM files created in directory from which EOF.py was called
 # Notes: blockMeshDict created such that there are 10 cells in Z direction. 
 # Notes: Number of cells in X & Y computed to ensure aspect ratio as close to 1 as possible
+# Notes: No warranty on results. Use at your own risk/discretion
+# Notes: Code is free. Appreciate feedback/acknowledging when using it
 # Created by: Venugopalan Raghavan
 
 ## Setup basic stuff
