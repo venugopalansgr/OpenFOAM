@@ -1,4 +1,4 @@
-# Usage: python EOF.py
+# Usage: python EOFv.py
 # Input: Reads in a text file with extension ".VSGR"
 # Input: Format of input file as follows
 # Input: STL start
