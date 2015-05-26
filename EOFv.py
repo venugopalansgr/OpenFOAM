@@ -17,6 +17,12 @@
 # Notes: Code is free. Appreciate feedback/acknowledging when using it
 # Created by: Venugopalan Raghavan
 
+# Update 26 May 2015:
+# (1) Multiple solids in one STL file issue corrected
+# (2) Unnecessary braces in refinementRegions definition corrected
+# (3) Missing "Bottom" patch defined for variables
+# (4) Incorrect class type for U corrected
+
 ## Setup basic stuff
 
 header = list()
@@ -317,6 +323,7 @@ for ii in xrange(0,len(wSTL)):
 		oFW.write("\n\t\t\t{")
 		oFW.write("\n\t\t\t\tname\t"+name+"_"+solid+";"+"\n\t\t\t}")
 	else:
+		oFW.write("\n\t\t\t"+solid)
 		oFW.write("\n\t\t\t{")
 		oFW.write("\n\t\t\t\tname\t"+name+"_"+solid+";"+"\n\t\t\t}")
 	if ii==len(wSTL)-1:
@@ -334,10 +341,10 @@ for ii in xrange(0,len(RefinementList)):
 	verticesMax = maxBd.split()
 	minX = (verticesMin[0].split(",")[0]).split("[[")[1]
 	minY = (verticesMin[1].split(","))[0]
-	minZ = (verticesMin[2].split("]]"))[0]
+	minZ = (verticesMin[2].split("]"))[0]
 	maxX = (verticesMax[0].split(",")[0]).split("[[")[1]
 	maxY = (verticesMax[1].split(","))[0]
-	maxZ = (verticesMax[2].split("]]"))[0]
+	maxZ = (verticesMax[2].split("]"))[0]
 	oFW.write("\n\t"+ name + "_Ref\n\t{")
 	oFW.write("\n\t\ttype\tsearchableBox;")
 	oFW.write("\n\t\tmin\t("+minX+" "+minY+" "+minZ+");")
@@ -448,7 +455,10 @@ for var in variables:
 	for ii in xrange(0,len(header)):
 		oFW.write(header[ii])
 
-	oFW.write("\tclass\tvolScalarField;")
+	if var == "U":
+		oFW.write("\tclass\tvolVectorField;")
+	else:
+		oFW.write("\tclass\tvolScalarField;")
 	oFW.write("\n\tobject\t"+var+";")
 	oFW.write("\n}")
 	
@@ -507,6 +517,29 @@ for var in variables:
 		oFW.write("\n\t\ttype\tzeroGradient;")
 	elif var == "U":
 		oFW.write("\n\t\ttype\tzeroGradient;")
+	oFW.write("\n\t}")
+	
+	oFW.write("\n\tBottom")
+	oFW.write("\n\t{")
+	if var == "p" or var == "p_rgh":
+		oFW.write("\n\t\ttype\tzeroGradient;")
+	elif var == "k":
+		oFW.write("\n\t\ttype\tkqRWallFunction;")
+		oFW.write("\n\t\tvalue\tuniform 0.1;")
+	elif var == "omega":
+		oFW.write("\n\t\ttype\tomegaWallFunction;")
+		oFW.write("\n\t\tvalue\tuniform 0.1;")
+	elif var == "epsilon":
+		oFW.write("\n\t\ttype\tepsilonWallFunction;")
+		oFW.write("\n\t\tvalue\tuniform 0.1;")
+	elif var == "nut":
+		oFW.write("\n\t\ttype\tnutkWallFunction;")
+		oFW.write("\n\t\tvalue\tuniform 0;")
+	elif var=="T":
+		oFW.write("\n\t\ttype\tzeroGradient;")
+	elif var == "U":
+		oFW.write("\n\t\ttype\tfixedValue;")
+		oFW.write("\n\t\tvalue\tuniform (0 0 0);")
 	oFW.write("\n\t}")
 
 	for jj in xrange(0,len(wSTL)):
