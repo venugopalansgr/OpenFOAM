@@ -23,6 +23,9 @@
 # (3) Missing "Bottom" patch defined for variables
 # (4) Incorrect class type for U corrected
 
+# Update 23 June 2015:
+# (1) Incorrect reference for name corrected - referenced "parts" instead of "part"
+
 ## Setup basic stuff
 
 header = list()
@@ -291,8 +294,8 @@ wMaxBd = list()
 
 while currline!='':
 	part = currline.strip().split("\t")
-	name = (parts[0].split(".stl"))[0]
-	refSurf = parts[1]
+	name = (part[0].split(".stl"))[0]
+	refSurf = part[1]
 	solid = part[2]
 	minBd = part[3]
 	maxBd = part[4]
