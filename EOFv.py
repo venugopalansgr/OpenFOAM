@@ -10,7 +10,7 @@
 # Input: If <levels of refinement of each> not specified, then defaults to (2 3)
 # Input: If <mode> not specified, defaults to "inside"
 # Input: If <levels> not specified, defaults to (1.00 3)
-# Output: OpenFOAM files created in directory from which EOF.py was called
+# Output: OpenFOAM files created in directory from which EOFv.py was called
 # Notes: blockMeshDict created such that there are 10 cells in Z direction. 
 # Notes: Number of cells in X & Y computed to ensure aspect ratio as close to 1 as possible
 # Notes: No warranty on results. Use at your own risk/discretion
@@ -25,6 +25,17 @@
 
 # Update 23 June 2015:
 # (1) Incorrect reference for name corrected - referenced "parts" instead of "part"
+
+# Update 05 August 2016:
+# (1) Reordered the blockMesh vertices to make it easier to understand
+# (2) Included surfaceFeatureExtractDict
+# (3) Added in implicitFeatureSnap in snappyHexMeshDict
+# (4) Domain sized to comply with Blocken's blockage ratio (obstruction < 17% of domain extent)
+# (5) Added in acceleration due to gravity "g"
+# (6) Includes sample createPatchDict and changeDictionaryDict
+# Notes:
+# (1) Assumes z to be the vertical direction!
+
 
 ## Setup basic stuff
 
@@ -56,6 +67,9 @@ snappyAdd.append("\n\ttolerance\t4;")
 snappyAdd.append("\n\tnSolveIter\t20;")
 snappyAdd.append("\n\tnRelaxIter\t4;")
 snappyAdd.append("\n\tnFeatureSnapIter\t10;")
+snappyAdd.append("\n\timplicitFeatureSnap\tfalse;")
+snappyAdd.append("\n\texplicitFeatureSnap\ttrue;")
+snappyAdd.append("\n\tmultiRegionFeatureSnap\ttrue;")
 snappyAdd.append("\n}")
 snappyAdd.append("\naddLayersControls")
 snappyAdd.append("\n{")
@@ -211,14 +225,18 @@ gXMin = 0 if abs(gXMin) < eps else gXMin
 gYMin = 0 if abs(gYMin) < eps else gYMin
 gZMin = 0 if abs(gZMin) < eps else gZMin
 
-gXMin = gXMin - 100
-gYMin = gYMin - 100
+rX = gXMax - gXMin
+rY = gYMax - gYMin
+rZ = gZMax - gZMin
 
-gXMax = gXMax + 100
-gYMax = gYMax + 100
+gXMin = gXMin - 2.5*rX
+gYMin = gYMin - 2.5*rY
+
+gXMax = gXMax + 2.5*rX
+gYMax = gYMax + 2.5*rY
 
 gZMin = gZMin - 10 if gZMin!=0 else gZMin
-gZMax = gZMax * 4
+gZMax = gZMax + 5 * rZ
 
 rX = gXMax - gXMin
 rY = gYMax - gYMin
@@ -242,14 +260,14 @@ for ii in xrange(0,len(blockMesh)):
 	oFW.write(blockMesh[ii])
 
 oFW.write("\n\nvertices\n(")
-oFW.write("\n\t(" + str(gXMin) + "\t" + str(gYMax) + "\t" + str(gZMax) + ")")
-oFW.write("\n\t(" + str(gXMax) + "\t" + str(gYMax) + "\t" + str(gZMax) + ")")
-oFW.write("\n\t(" + str(gXMax) + "\t" + str(gYMin) + "\t" + str(gZMax) + ")")
-oFW.write("\n\t(" + str(gXMin) + "\t" + str(gYMin) + "\t" + str(gZMax) + ")")
-oFW.write("\n\t(" + str(gXMin) + "\t" + str(gYMax) + "\t" + str(gZMin) + ")")
-oFW.write("\n\t(" + str(gXMax) + "\t" + str(gYMax) + "\t" + str(gZMin) + ")")
-oFW.write("\n\t(" + str(gXMax) + "\t" + str(gYMin) + "\t" + str(gZMin) + ")")
 oFW.write("\n\t(" + str(gXMin) + "\t" + str(gYMin) + "\t" + str(gZMin) + ")")
+oFW.write("\n\t(" + str(gXMax) + "\t" + str(gYMin) + "\t" + str(gZMin) + ")")
+oFW.write("\n\t(" + str(gXMax) + "\t" + str(gYMax) + "\t" + str(gZMin) + ")")
+oFW.write("\n\t(" + str(gXMin) + "\t" + str(gYMax) + "\t" + str(gZMin) + ")")
+oFW.write("\n\t(" + str(gXMin) + "\t" + str(gYMin) + "\t" + str(gZMax) + ")")
+oFW.write("\n\t(" + str(gXMax) + "\t" + str(gYMin) + "\t" + str(gZMax) + ")")
+oFW.write("\n\t(" + str(gXMax) + "\t" + str(gYMax) + "\t" + str(gZMax) + ")")
+oFW.write("\n\t(" + str(gXMin) + "\t" + str(gYMax) + "\t" + str(gZMax) + ")")
 oFW.write("\n);")
 oFW.write("\nblocks\n(\n\thex\t(0 1 2 3 4 5 6 7)\t");
 oFW.write("("+str(dX)+" "+str(dY)+" "+str(dZ)+")"+"\tsimpleGrading\t(1 1 1)\n);")
@@ -257,10 +275,10 @@ oFW.write("\nedges\n(\n);")
 oFW.write("\nboundary\n(")
 oFW.write("\n\tLeft\n\t{\n\t\ttype\tpatch;\n\t\tfaces\n\t\t(\n\t\t\t(0 4 7 3)\n\t\t);\n\t}")
 oFW.write("\n\tRight\n\t{\n\t\ttype\tpatch;\n\t\tfaces\n\t\t(\n\t\t\t(1 2 6 5)\n\t\t);\n\t}")
-oFW.write("\n\tTop\n\t{\n\t\ttype\tpatch;\n\t\tfaces\n\t\t(\n\t\t\t(0 3 2 1)\n\t\t);\n\t}")
-oFW.write("\n\tBottom\n\t{\n\t\ttype\twall;\n\t\tfaces\n\t\t(\n\t\t\t(4 5 6 7)\n\t\t);\n\t}")
-oFW.write("\n\tFront\n\t{\n\t\ttype\tpatch;\n\t\tfaces\n\t\t(\n\t\t\t(0 1 5 4)\n\t\t);\n\t}")
-oFW.write("\n\tBack\n\t{\n\t\ttype\tpatch;\n\t\tfaces\n\t\t(\n\t\t\t(3 7 6 2)\n\t\t);\n\t}")
+oFW.write("\n\tBottom\n\t{\n\t\ttype\twall;\n\t\tfaces\n\t\t(\n\t\t\t(0 3 2 1)\n\t\t);\n\t}")
+oFW.write("\n\tTop\n\t{\n\t\ttype\tpatch;\n\t\tfaces\n\t\t(\n\t\t\t(4 5 6 7)\n\t\t);\n\t}")
+oFW.write("\n\tBack\n\t{\n\t\ttype\tpatch;\n\t\tfaces\n\t\t(\n\t\t\t(0 1 5 4)\n\t\t);\n\t}")
+oFW.write("\n\tFront\n\t{\n\t\ttype\tpatch;\n\t\tfaces\n\t\t(\n\t\t\t(3 7 6 2)\n\t\t);\n\t}")
 oFW.write("\n);")
 oFW.write("\nmergePatchPairs\n(\n);")
 oFW.close()
@@ -306,6 +324,34 @@ while currline!='':
 	wMaxBd.append(maxBd)
 	currline = iFR.readline()
 
+iFR.close()	
+	
+##	Setup and write surfaceFeatureExtractDict at the same time
+
+oF2 = cwd + "/system/surfaceFeatureExtractDict"
+oFW2 = open(oF2,"w")
+
+surface = ["\tclass\tdictionary;\n","\tlocation\tsystem;\n","\tobject\tsurfaceFeatureExtractDict;\n","}\n\n"]
+
+for ii in xrange(0,len(header)):
+	oFW2.write(header[ii])
+
+for ii in xrange(0,len(surface)):
+	oFW2.write(surface[ii])
+	
+for w in wSTL:
+	oFW2.write(w + ".stl\n")
+	oFW2.write("{\n")
+	oFW2.write("\textractionMethod\textractFromSurface;\n")
+	oFW2.write("\textractFromSurfaceCoeffs\n")
+	oFW2.write("\t{\n")
+	oFW2.write("\t\tincludedAngle\t180;\n")
+	oFW2.write("\t}\n")
+	oFW2.write("\twriteObj\tyes;\n")
+	oFW2.write("}\n")
+
+oFW2.close()	
+	
 c1 = 0
 
 for ii in xrange(0,len(wSTL)):
@@ -606,7 +652,8 @@ for f in files:
 		oFW.write("\nrunTimeModifiable\ttrue;")
 	elif f == "decomposeParDict":
 		oFW.write("\nnumberOfSubdomains\t1;")
-		oFW.write("\n\nmethod\thierarchical;\n")
+		oFW.write("\n\nmethod\tscotch;\n")
+		oFW.write("/*Options are simple, hierarchical, scotch, manual*/\n")
 		oFW.write("\nsimpleCoeffs")
 		oFW.write("\n{")
 		oFW.write("\n\tn\t(1 1 1);")
@@ -636,11 +683,11 @@ for f in files:
 		oFW.write("\n\ndivSchemes")
 		oFW.write("\n{")	
 		oFW.write("\n\tdefault\tnone;")
-		oFW.write("\n\tdiv(phi,U)\tGauss upwind;")
-		oFW.write("\n\tdiv(phi,T)\tGauss upwind;")
-		oFW.write("\n\tdiv(phi,k)\tGauss upwind;")
-		oFW.write("\n\tdiv(phi,epsilon)\tGauss upwind;")
-		oFW.write("\n\tdiv(phi,omega)\tGauss upwind;")
+		oFW.write("\n\tdiv(phi,U)\tbounded Gauss upwind;")
+		oFW.write("\n\tdiv(phi,T)\tbounded Gauss upwind;")
+		oFW.write("\n\tdiv(phi,k)\tbounded Gauss upwind;")
+		oFW.write("\n\tdiv(phi,epsilon)\tbounded Gauss upwind;")
+		oFW.write("\n\tdiv(phi,omega)\tbounded Gauss upwind;")
 		oFW.write("\n\tdiv((nuEff*dev(T(grad(U)))))\tGauss linear;")
 		oFW.write("\n}")
 
@@ -690,7 +737,8 @@ for f in files:
 
 		oFW.write('\n"k|omega|epsilon|U|T"')
 		oFW.write("\n\t{")
-		oFW.write("\n\t\tsolver\tPBiCG;")
+		oFW.write("\n\t\tsolver\tsmoothSolver;")
+		oFW.write("\n\t\tsmoother\tGaussSeidel;")
 		oFW.write("\n\t\tpreconditioner\tDILU;")
 		oFW.write("\n\t\ttolerance\t1e-05;")
 		oFW.write("\n\t\trelTol\t0.1;")
@@ -700,12 +748,12 @@ for f in files:
 		oFW.write("\nSIMPLE")
 		oFW.write("\n{")
 		oFW.write("\n\tnNonOrthogonalCorrectors\t0;")
-		oFW.write("\n\tpRefCell\t0;")
-		oFW.write("\n\tpRefValue\t0;")
+		oFW.write("\n\t//pRefCell\t0; //Uncomment only if required")
+		oFW.write("\n\t//pRefValue\t0; //Uncomment only if required")
 		oFW.write("\n\tresidualControl")
 		oFW.write("\n\t{")
 		oFW.write('\n\t\t"k|omega|epsilon|U|T"\t1e-4;')
-		oFW.write('\n\t\t"p|p_rgh"\t1e-3;')
+		oFW.write('\n\t\t"p|p_rgh"\t1e-4;')
 		oFW.write("\n\t}")
 		oFW.write("\n}")
 
@@ -726,6 +774,7 @@ for f in files:
 
 ## Create RASProperties and transportProperties files
 
+# RASProperties
 oF = cwd + "/constant/RASProperties"
 oFW = open(oF,"w")
 
@@ -743,6 +792,7 @@ oFW.write("\n\nprintCoeffs\ton;")
 
 oFW.close()
 
+# transportProperties
 oF = cwd + "/constant/transportProperties"
 oFW = open(oF,"w")
 
@@ -758,3 +808,94 @@ oFW.write("\n\ntransportModel\tNewtonian;")
 oFW.write("\n\nnu\tnu\t[0 2 -1 0 0 0 0]\t1.5E-05;")
 
 oFW.close()
+
+# Acceleration due to gravity g
+oF = cwd + "/constant/g"
+oFW = open(oF,"w")
+
+for ii in xrange(0,len(header)):
+	oFW.write(header[ii])
+
+oFW.write("\tclass\tuniformDimensionedVectorField;")
+oFW.write("\n\tlocation\tconstant;")
+oFW.write("\n\tobject\tg;")
+oFW.write("\n}\n")
+
+oFW.write("\n\ndimensions\t[0 1 -2 0 0 0 0];")
+oFW.write("\n\nvalue\t(0 0 -9.81);")
+
+oFW.close()
+
+## Create a createPatchDict framework
+
+oF = cwd + "/system/createPatchDict"
+oFW = open(oF,"w")
+
+for ii in xrange(0,len(header)):
+	oFW.write(header[ii])
+
+oFW.write("\tclass\tdictionary;")
+oFW.write("\n\tlocation\tsystem;")
+oFW.write("\n\tobject\tcreatePatchDict;")
+oFW.write("\n}\n")
+
+oFW.write("\nmatchTolerance\t0.001;\n")
+oFW.write("\npointSync\ttrue;\n")
+oFW.write("\npatches\n(\n")
+oFW.write("/*Sample entries \t{\n")
+oFW.write("\t\tname patchName;\n")
+oFW.write("\t\tpatchInfo\n")
+oFW.write("\t\t{\n\t\t\ttype\tpatch;\t\t}\n")
+oFW.write("\n\t\tconstructFrom\tpatches;\n")
+oFW.write("\n\t\tpatches\t(patchName1 patchName2);\n")
+oFW.write("\n\t\tset\tsetName;\n")
+oFW.write("\t}*/\n")
+oFW.write(");\n")
+
+oFW.close()
+
+## Create a changeDictionaryDict framework
+
+oF = cwd + "/system/changeDictionaryDict"
+oFW = open(oF,"w")
+
+for ii in xrange(0,len(header)):
+	oFW.write(header[ii])
+
+oFW.write("\tclass\tdictionary;")
+oFW.write("\n\tlocation\tsystem;")
+oFW.write("\n\tobject\tchangeDictionaryDict;")
+oFW.write("\n}\n")
+
+oFW.write("\ndictionaryReplacement\n{\n")
+oFW.write("/* Sample entries\n")
+
+oFW.write("\tboundary\n\t{\n")
+oFW.write("\t\tFront\n\t\t{\n")
+oFW.write("\t\t\ttype\twall;\n")
+oFW.write("\t\t}\n")
+oFW.write("\t}\n")
+
+oFW.write("\tU\n\t{\n")
+oFW.write("\t\tFront\n\t\t{\n")
+oFW.write("\t\t\ttype\twall;\n")
+oFW.write("\t\t}\n")
+oFW.write("\t}\n")
+oFW.write("}\n")
+oFW.write("*/\n")
+
+oFW.close()
+
+for f in STLFileList:
+	p1 = f.split("\t")[0]
+	os.rename(p1,"constant/triSurface/"+p1)
+
+os.mkdir("Misc")
+os.rename("Input.VSGR","Misc/Input.VSGR")
+os.rename("MasterSTLList","Misc/MasterSTLList")
+
+try:
+	os.mknod("case.foam")
+except:
+	oFW = open(cwd + "/case.foam","w")
+	oFW.close()
