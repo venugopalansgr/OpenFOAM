@@ -1,0 +1,4 @@
+This file contains all the codes needed to compile parallelBlockMesh. As usual, compile using "wmake". No change in blockMesh library is needed. 
+
+To make it work across different versions of OpenFOAM (mainly Foundation), add the following line to your bashrc:
+export OFVN=$(echo ${WM_PROJECT_VERSION%%.*})
