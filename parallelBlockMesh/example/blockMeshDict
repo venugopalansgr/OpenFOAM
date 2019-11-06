@@ -1,0 +1,173 @@
+/*------------------------------------------------------------------------*\
+|=========                 |                                               |
+|\\      /   F ield        | OpenFOAM: The Open Source CFD Toolbox         |
+| \\    /    O peration    | Version:  2.1.0                               |
+|  \\  /     A nd          | Web:      www.OpenFOAM.org                    |
+|   \\/      M anipulation |                                               |
+\*------------------------------------------------------------------------*/
+
+
+FoamFile
+{
+/* Exported using EOFv */
+	version	2.1;
+	format	ascii;
+	class	dictionary;
+	location	constant;
+	object	blockMeshDict;
+}
+
+/*
+	Simple case to illustrate the settings required for parallelBlockMesh
+	Number of slices will be same as number of processors specified in decomposeParDict
+
+	To run parallelBlockMesh: mpirun -np <number of processors> parallelBlockMesh -parallel 
+
+	Author: Venugopalan Raghavan	
+*/
+
+
+convertToMeters	1;
+
+nX	400;
+nY	400;
+nZ	640;
+
+/*	
+	Total number of cells = nX * nY * nZ = 102.4 million 
+*/
+
+vertices
+(
+	(-10 -10 0)
+	(10 -10 0)
+	(10 10 0)
+	(-10 10 0)
+
+	(-10 -10 5)
+	(10 -10 5)
+	(10 10 5)
+	(-10 10 5)
+);
+
+/*	Currently only simpleGrading is supported 
+	For each direction, even if the grading is a single number, it must be specified within ()
+	In the example below, the usual simpleGrading would have read: simpleGrading (1 1 1)
+	However, for parallelBlockMesh, to cater for grading in all directions, it has to be written as:
+		simpleGrading
+		(
+			(
+				(length_in_X1_direction number_of_cells_in_X1_direction grading_in_X1_direction)
+			)
+
+			(
+				(length_in_X2_direction number_of_cells_in_X2_direction grading_in_X2_direction)
+			)
+
+			(
+				(length_in_X3_direction number_of_cells_in_X3_direction grading_in_X3_direction)
+			)
+		)
+	If you have multi-grading, then it will look like:
+		simpleGrading
+		(
+			(
+				(length_in_X1_direction_1 number_of_cells_in_X1_direction_1 grading_in_X1_direction_1)
+				(length_in_X1_direction_2 number_of_cells_in_X1_direction_2 grading_in_X1_direction_2)
+				(length_in_X1_direction_3 number_of_cells_in_X1_direction_3 grading_in_X1_direction_3)
+			)
+
+			(
+				(length_in_X2_direction number_of_cells_in_X2_direction grading_in_X2_direction)
+			)
+
+			(
+				(length_in_X3_direction number_of_cells_in_X3_direction grading_in_X3_direction)
+			)
+		)
+			Where: length_in_X1_direction_1 + length_in_X1_direction_2 + length_in_X1_direction_3 = length_in_X1_direction
+*/
+blocks
+(
+	hex (0 1 2 3 4 5 6 7) ($nX $nY $nZ) simpleGrading
+	(
+		(
+			(20 $nX 1)	//length in X1 as calculated from the vertices is 10 -(-10) = 20; ; number of cells in X1 direction = 400
+		)
+		(
+			(20 $nY 1)	//length in X2 as calculated from the vertices is 10 -(-10) = 20; number of cells in X2 direction = 400
+		)
+		(
+			(5 $nZ 1)	//length in X3 as calculated from the vertices is 5 - 0 = 5; number of cells in X3 direction = 640
+		)
+	)
+);
+
+/*	
+	In this implementation, only straight edges are supported 
+*/
+
+edges
+(
+);
+
+/*
+	For this version, the last two patches specified in boundary should have normal in same direction as which mesh is being sliced
+	In this example, "Bottom" and "Top" both have normals as (0 0 1) [ignore sign]
+	The direction in which the mesh is sliced will be X3 direction 
+*/
+
+boundary
+(
+	Back
+	{
+		type	patch;
+		faces
+		(
+			(0 1 5 4)
+		);
+	}
+	Front
+	{
+		type	patch;
+		faces
+		(
+			(3 7 6 2)
+		);
+	}
+	Left
+	{
+		type	patch;
+		faces
+		(
+			(0 4 7 3)
+		);
+	}
+	Right
+	{
+		type	patch;
+		faces
+		(
+			(1 2 6 5)
+		);
+	}
+	Bottom
+	{
+		type	wall;
+		faces
+		(
+			(0 3 2 1)
+		);
+	}
+	Top
+	{
+		type	patch;
+		faces
+		(
+			(4 5 6 7)
+		);
+	}
+);
+mergePatchPairs
+(
+);
