@@ -20,6 +20,7 @@ FoamFile
 /*
 	Simple case to illustrate the settings required for parallelBlockMesh
 	Number of slices will be same as number of processors specified in decomposeParDict
+	For simplicity, this file must be called blockMeshDict and be placed in system
 
 	To run parallelBlockMesh: mpirun -np <number of processors> parallelBlockMesh -parallel 
 
