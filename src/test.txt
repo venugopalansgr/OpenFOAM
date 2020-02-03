@@ -1,1 +1,2 @@
-This is test
+Version of OF for tools here:
+1. someSnappyHexMesh = OpenFOAM v1906
